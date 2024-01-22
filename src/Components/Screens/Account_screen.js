@@ -6,7 +6,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import  AntDesign  from 'react-native-vector-icons/AntDesign'; 
 import  Entypo  from 'react-native-vector-icons/Entypo'; 
 import firestore from '@react-native-firebase/firestore';
-
+import { useNavigation } from "@react-navigation/native";
 
 export default function Account_screen({navigation}) {
   const [loading,set_loading]= useState(false)
@@ -48,27 +48,23 @@ export default function Account_screen({navigation}) {
       ),
     });
   }, [navigation, colorScheme]);
+  const navigator = useNavigation()
 
-  const User_SignOut = async ()=>{
-    set_loading(true)
-    const userRef = firestore().collection('Users').doc(auth().currentUser.uid);
-    userRef.update({
-      online:false,
-      lastSeen:firestore.FieldValue.serverTimestamp(),
-    }).then(async (e)=>{
-      await auth().signOut().then((e)=>{
-        console.log("User Signed out")
-        set_loading(false)
-      }).catch((e)=>{
-        console.log(e)
-      })
-    })
-  }
+ const handle_signout = ()=>{
+  console.log("User Signed Out")
+  navigator.replace("login")
+
+ }
 
   return (
-    <View style={{flex:1,backgroundColor:getThemeStyles().backgroundColor}}> 
-      <Text>Account_screen</Text>
-      <Button title={'Sign Out'} loading={loading} onPress={User_SignOut}/>
+  <View style={{ flex: 1, backgroundColor: getThemeStyles().backgroundColor, padding: 20 }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', color: getThemeStyles().color, marginBottom: 20 }}>
+       Sign Out From the Account 
+      </Text>
+      {/* Add more styled components as needed */}
+      <TouchableOpacity onPress={handle_signout} style={{ backgroundColor: '#4964FF', padding: 15, borderRadius: 8, alignItems: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>Sign Out</Text>
+      </TouchableOpacity>
     </View>
   )
 }

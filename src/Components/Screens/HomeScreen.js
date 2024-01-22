@@ -1,18 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity,useColorScheme,SafeAreaView } from 'react-native';
+import { View, Text, FlatList, Dimensions, StyleSheet, TouchableOpacity,useColorScheme,SafeAreaView,Platform } from 'react-native';
 import  AntDesign  from 'react-native-vector-icons/AntDesign'; 
 import  Entypo  from 'react-native-vector-icons/Entypo'; 
-import { Avatar, Input} from 'native-base';
-import { useNavigation } from '@react-navigation/native';
-import CryptoJS from 'react-native-crypto-js';
+import { Input} from 'native-base';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import moment from 'moment';
 
 const screenWidth = Dimensions.get('window').width;
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ route, navigation }) => {
   const colorScheme = useColorScheme();
-  const [showMenu, setShowMenu] = useState(false);
-  const btnRef = useRef();
-  const navigator = useNavigation()
-
   const getThemeStyles = () => {
     if (colorScheme === 'dark') {
       return {
@@ -28,28 +24,17 @@ const HomeScreen = ({ navigation }) => {
       };
     }
   };
-  
-  const demoData = [
-    { id: '1', imageUrl: 'https://via.placeholder.com/150' },
-    { id: '2', imageUrl: 'https://via.placeholder.com/150' },
-  ];
-  const chatData = [
-    {
-      id: '1',
-      imageUrl: 'https://via.placeholder.com/150',
-      name: 'John Doe',
-      lastMessage: 'Hey there!',
-      unreadCount: 2,
-    },
-    {
-      id: '2',
-      imageUrl: 'https://via.placeholder.com/150',
-      name: 'Jane Smith',
-      lastMessage: 'How are you?',
-      unreadCount: 0,
-    },
-  ];
+  const user = route.params.user
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
+  
+  const onDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
 
 
   React.useLayoutEffect(() => {
@@ -57,7 +42,7 @@ const HomeScreen = ({ navigation }) => {
       headerTitle: () => (
         <View style={{ alignItems: 'center' }}>
           <Text style={{ fontSize: 25, fontWeight: 'bold', letterSpacing: 1.5, color: getThemeStyles().color }}>
-            Wish<Text style={{ color: '#4964FF' }}>pers</Text>
+            Ryd<Text style={{ color: '#4964FF' }}>eu </Text>
           </Text>
         </View>
       ),
@@ -66,11 +51,7 @@ const HomeScreen = ({ navigation }) => {
       },
       headerTintColor: getThemeStyles().backgroundColor,
       headerRight: () => (
-        <View style={{ flexDirection: 'row', marginRight: 15 }}>
-          <TouchableOpacity onPress={() => { console.log('Search') }}>
-            <Entypo name="magnifying-glass" size={24} color={getThemeStyles().color} style={{ marginRight: 20 }} />
-          </TouchableOpacity>
-          
+        <View style={{ flexDirection: 'row', marginRight: 15 }}>       
           <TouchableOpacity>
             <AntDesign name="ellipsis1" size={24} color={getThemeStyles().color} />
           </TouchableOpacity>
@@ -80,10 +61,8 @@ const HomeScreen = ({ navigation }) => {
   }, [navigation, colorScheme]);
 
   
-  return (
-
-      <SafeAreaView style={[styles.container, { backgroundColor: getThemeStyles().backgroundColor }]}>
-        
+return (
+  <SafeAreaView style={[styles.container, { backgroundColor: getThemeStyles().backgroundColor }]}>
     <View style={{ alignItems: "center",flexDirection:'row',marginTop:5,margin:10}}>
         <View style={{alignItems:'center',justifyContent:"center"}}>
           <View>  
@@ -98,35 +77,44 @@ const HomeScreen = ({ navigation }) => {
         <Input style={{borderWidth:0,fontSize: 16,color:getThemeStyles().color}} variant={'rounded'} placeholder="Search"  />
         </View>
     </View>
-      
-      <View style={styles.chatContainer}>
-      <FlatList
-        data={chatData}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => navigator.navigate('Chat_screen', { chatId: item.id })}>
-            <View style={styles.chatItem}>
-              <View style={styles.avatarContainer}>
-                <Avatar size={'md'} source={{ uri: item.imageUrl }} />
-              </View>
-              <View style={styles.chatInfo}>
-                <View style={styles.nameAndUnread}>
-                  <Text style={styles.nameText}>{item.name}</Text>
-                  {item.unreadCount > 0 && (
-                    <View style={styles.unreadCount}>
-                      <Text style={styles.unreadText}>{item.unreadCount}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.lastMessage}>{item.lastMessage}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.chatContent}
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-      />
+    <View style={styles.Date_Container}>
+      <View style={{ marginBottom: 10 }}>
+          <Text style={{ fontWeight: 'bold', color: getThemeStyles().color }}>Name:</Text>
+          <Text style={{ color: getThemeStyles().color }}>{user.user.account.firstName} {user.user.account.lastName}</Text>
+        </View>
+        <View style={{ marginBottom: 10 }}>
+          <Text style={{ fontWeight: 'bold', color: getThemeStyles().color }}>Email:</Text>
+          <Text style={{ color: getThemeStyles().color }}>{user.user.email}</Text>
+        </View>
+        <View style={{ marginBottom: 10 }}>
+          <Text style={{ fontWeight: 'bold', color: getThemeStyles().color }}>Created At:</Text>
+          <Text style={{ color: getThemeStyles().color }}>{user.user.createdAt}</Text>
+        </View>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Touch Me to Change the date</Text>
+      <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+        <View
+          style={{
+            backgroundColor: getThemeStyles().backgroundColor,
+            padding: 10,
+            borderRadius: 8,
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <Text style={{color:getThemeStyles().color}}>{moment(selectedDate).format('YYYY-MM-DD')}</Text>
+        </View>
+      </TouchableOpacity>
+      {Platform.OS === 'android' && showDatePicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display="default"
+          onChange={onDateChange}
+        />
+      )}
+    </View>
+
     </View>
   </SafeAreaView>    
   );
@@ -136,77 +124,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  chatContainer: {
+  Date_Container: {
     flex: 1,
     marginTop: 20,
     paddingHorizontal: 15,
   },
-  chatContent: {
-    paddingBottom: 100, 
-  },
-  chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  avatarContainer: {
-    marginRight: 10,
-  },
-  chatInfo: {
-    flex: 1,
-  },
-  nameAndUnread: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  nameText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  unreadCount: {
-    backgroundColor: '#4964FF',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  unreadText: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  lastMessage: {
-    color: '#555',
-  },
+  
 });
 
 export default HomeScreen;
 
-
-/**
- * 
- *         <Text style={{fontSize:16,marginLeft:15,fontWeight:"bold",color:getThemeStyles().color}}>Status</Text>
-
- * 
- * <View style={{ height: '10%', flexDirection: 'row', alignItems: 'center' }}>
-        <FlatList
-          horizontal
-          data={demoData}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => navigator.navigate('Stories_screen', { chatId: item.id })}>
-            <View style={{ marginLeft: 10 }}>
-              <View style={{ backgroundColor: "#4964FF", height: 55, width: 55, justifyContent: "center", alignItems: "center", borderRadius: 100 }}>
-                <Avatar size={'md'} source={{ uri: item.imageUrl }} />
-              </View>
-            </View>
-          </TouchableOpacity>
-          )}
-          contentContainerStyle={{ paddingHorizontal: 10 }}
-          showsVerticalScrollIndicator={false}
-          showsHorizontalScrollIndicator={false}/>
-      </View>
- * 
- * 
- * 
- */

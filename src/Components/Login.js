@@ -6,10 +6,12 @@ import { TouchableOpacity } from "react-native";
 import * as Animatable from "react-native-animatable";
 import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "react-native";
-import auth from '@react-native-firebase/auth';
+import auth, { firebase } from '@react-native-firebase/auth';
 import { GoogleSignin,statusCodes} from '@react-native-google-signin/google-signin';
 import { Alert, Box, Center, CloseIcon, HStack, IconButton, NativeBaseProvider, VStack } from "native-base";
-
+import firestore from '@react-native-firebase/firestore';
+import {  Input, Item } from 'native-base';
+import axios from "axios";
 
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -45,13 +47,12 @@ function Login() {
   const [showAlert,set_showAlert]= useState(false)
   const [alert_message,set_Alertmessage]= useState('')
 
-  const navigation = useNavigation()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  useEffect(()=>{
-    GoogleSignin.configure({
-      webClientId:"75588438178-f9rikogsopjs2f4ji8b01r2rj9vmsbae.apps.googleusercontent.com"
-    });
-  },[])
+
+  const navigator = useNavigation()
+
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -81,54 +82,35 @@ function Login() {
       };
   }, []);
 
- const handle_login = async () => {
-  if (value !== null && value.length === 13) {
-    try {
-      set_loading(true);
-      const confirmation = await auth().signInWithPhoneNumber(value);
-      set_Confirmation(confirmation);
-      set_loading(false);
-      navigation.replace('OTP', { confirmation });
-    } catch (error) {
-      set_loading(false);
-      console.log("There is an error in the OTP Authentication:", error);
+  const handleLogin = async () => {
+    set_loading(true)
+    if(email=="" || password==""){
+      set_loading(false)
+      set_showAlert(true)
+      set_Alertmessage('Please Enter Email and Password')
+    
     }
-  } else {
-    set_showAlert(true)
-    let alertMessage = '';
-    if (!value) {
-      alertMessage = 'Phone number is empty.';
-      set_Alertmessage(alertMessage)
-    } else if (value.length < 10) {
-      alertMessage = 'Phone number is less than 10 digits.';
-      set_Alertmessage(alertMessage)
-    } else if (value.length > 10) {
-      alertMessage = 'Phone number is greater than 10 digits.';
-      set_Alertmessage(alertMessage)
-    }
-  }
-};
-
-  async function signInGoogle(){
-    try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      await GoogleSignin.signOut();
-      const { idToken } = await GoogleSignin.signIn();
-      const google_credentials = auth.GoogleAuthProvider.credential(idToken)
-      await auth().signInWithCredential(google_credentials);
-      console.log("User Signed in")
-    } catch (error) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled the login flow
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        // operation (e.g. sign in) is in progress already
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        // play services not available or outdated
-      } else {
-        // some other error happened
-      }
+    else {
+      try {
+        const response = await axios.post('https://new-api-staging.rydeu.com/login', {
+          email,
+          password,
+          type: "customer"
+        });
+        set_loading(false)
+        // Handle the response as needed
+        const user=response.data.data
+        navigator.replace('Main',{user})
+      } catch (error) {
+        // Handle errors
+        set_loading(false)
+        console.error('Error:', error.message);
+        set_showAlert(true)
+        set_Alertmessage(error.message)
+      }  
     }
   };
+  
 
 
  
@@ -151,11 +133,12 @@ function Login() {
                       borderBottomLeftRadius: 40,
                       borderBottomRightRadius: 40,}}>
           <View style={{ alignItems: "center", marginTop: 50 }}>
-            <Text style={{fontSize: 40,fontWeight: "bold",marginBottom:10,color:getThemeStyles().color}}>Whis<Text style={{color:'#4964FF'}}>pers</Text></Text>
+            <Text style={{fontSize: 40,fontWeight: "bold",marginBottom:10,color:getThemeStyles().color}}>Ry<Text style={{color:'#4964FF'}}>deu</Text></Text>
             <Text style={styles.Subheading}>
               By signing in, you are agreeing to our <Text style={{color:'#4964FF'}}>Terms and Privacy Policy</Text>
             </Text>
           </View>
+
           {showAlert&&<Alert  style={{width:"90%",marginTop:10}} status="info" colorScheme="info">
           <VStack space={2} flexShrink={1} w="100%">
             <HStack flexShrink={1} space={2} alignItems="center" justifyContent="space-between">
@@ -174,50 +157,51 @@ function Login() {
         </VStack>
           </Alert>}
 
-          <View style={styles.Input_container}>
-          <PhoneInput
-            defaultValue={value}
-            defaultCode="IN"
-            onChangeFormattedText={(text) => {
-              setValue(text);
-            }}
-            
-            codeTextStyle={{color:getThemeStyles().color}}
-            containerStyle={{borderRadius:25,height:70,backgroundColor:getThemeStyles().backgroundColor}}
-            textContainerStyle={{borderRadius:25,backgroundColor:getThemeStyles().backgroundColor}}
-            textInputStyle={{textAlign:'left',color:getThemeStyles().color}}
-          />
-          <TouchableOpacity>
-          <Button onPress={handle_login} loading={loading} buttonStyle={styles.continueButton} title={'Continue'} />
-          </TouchableOpacity>
-          </View>
-            {!isKeyboardActive &&<> 
-              <Text style={styles.Subheading_1}> 
+         
+            {true &&<> 
+              {(!isKeyboardActive || !showAlert)&&<Text style={styles.Subheading_1}> 
                 Embark on a journey with us! By unlocking the magic of sign-in, you're stepping into a world of endless possibilities.
-              </Text>
-              <View>
-
-            {/*  
-            <TouchableOpacity onPress={signInGoogle}>
-                <View style={styles.googleSignInButton}>
-                   <Image
-                    source={require('../Assests/Google-Symbol.png')}
-                    style={{width:20,height:20}}
-                   /> 
-                  <Text style={styles.googleButtonText}>Sign in with Google</Text>
-                </View>
-              </TouchableOpacity>
-            */}
+              </Text>}
+              <View style={{flexDirection:'row',margin:25,justifyContent:'space-evenly',alignItems:'center'}}>
+                <View style={{flex:1}}>
+                    <View style={{margin:10}}>
+                    <Input
+                      style={{margin:5,fontSize:15,color:getThemeStyles().color}}
+                      placeholder="Email"
+                      keyboardType="email-address"
+                      onChangeText={(text) => setEmail(text)}
+                      value={email}
+                    />
+                    </View>
+                    
+                    <View style={{margin:10}}>
+                    <Input
+                    style={{margin:5,fontSize:15,color:getThemeStyles().color}}
+                      placeholder="Password"
+                      secureTextEntry
+                      onChangeText={(text) => setPassword(text)}
+                      value={password}
+                    />
+                    </View>
+                    
+                    <Button
+                      buttonStyle={{ borderRadius:15,backgroundColor: "#4964FF",marginTop:10 }}
+                      onPress={handleLogin}
+                      loading={loading}
+                    >
+                      <Text style={{ color: 'white', fontWeight: 'bold' }}>Login</Text>
+                    </Button>
+              </View>
             </View>
           </>
             }
-
-          <View style={styles.backgroundImage}>
+          {!isKeyboardActive&& !showAlert &&<View style={styles.backgroundImage}>
               <Image
                 source={colorScheme === 'dark'?require('../Assests/dark_banner_1.png'):require('../Assests/banner_1.png')}
                 style={{width:isKeyboardActive ? 300:350,height:isKeyboardActive ? 250:300}}
               />
-            </View>
+            </View>}
+          
         </View>
         <View style={styles.footer}>
             <Text style={{color:'#fff'}}>Created by Rohan Goswami</Text>
@@ -263,8 +247,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   backgroundImage: {
-    position: 'absolute',
-    bottom: -50,
+    bottom: 10,
   },
   Input_container: {
     display: "flex",
@@ -303,3 +286,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 });
+
+
+
+
+/**
+ * email: "rydeu@email10p.org",
+        password: "123456",
+        type: "customer"
+ * 
+ * 
+ */
